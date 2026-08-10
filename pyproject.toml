@@ -1,0 +1,31 @@
+[project]
+name = "hommi-diffusion-policy"
+version = "0.1.3"
+description = "Standalone diffusion policy implementations adapted from HoMMI and UMI."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+dependencies = [
+    "torch>=2.0",
+    "diffusers>=0.18.2,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+hommi_diffusion_policy = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

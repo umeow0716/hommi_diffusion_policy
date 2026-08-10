@@ -103,22 +103,6 @@ class Encoder(torch.nn.Module):
 
 Returning the feature tensor directly is also accepted.
 
-## HoMMI / UMI compatibility
-
-Version 0.1.2 keeps the registered module names used by HoMMI/UMI checkpoints for
-U-Net, Transformer, and DiT. The DiT model in particular uses HoMMI's
-`dit_blocks.*`, `ada_ln_modulation.*`, and `final_linear.*` state-dict keys.
-
-The Transformer policy accepts both `(num_tokens, embedding_dim)` and UMI-style
-`(1, num_tokens, embedding_dim)` encoder output shapes. Its attention initialization
-and observation-encoder optimizer grouping also follow the UMI implementation.
-
-Normal U-Net, Transformer, and DiT prediction use a direct unconditional sampling
-path to avoid allocating unused zero condition/mask tensors. Their public
-`conditional_sample(...)` compatibility methods remain available. U-Net action
-horizons are validated against the model's downsample factor instead of silently
-interpolating mismatched skip-connection lengths.
-
 ## Scheduler
 
 Schedulers are passed into the policies, so the policy code is not tied to a specific

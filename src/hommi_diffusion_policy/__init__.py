@@ -1,6 +1,7 @@
 from .common.normalizer import LinearNormalizer, SingleFieldLinearNormalizer
 from .encoder import (
     BaseObsEncoder,
+    DiTObsEncoderConfig,
     DiTObsEncoderLite,
     available_encoders,
     create_encoder,
@@ -19,10 +20,11 @@ __all__ = [
     "DiffusionUnetPolicy",
     "DiffusionTransformerPolicy",
     "DiffusionDiTImagePolicy",
+    "DiTObsEncoderConfig",
     "DiTObsEncoderLite",
     "available_encoders",
     "create_encoder",
     "register_encoder",
 ]
 
-__version__ = "0.1.7"
+__version__ = "0.2.0"

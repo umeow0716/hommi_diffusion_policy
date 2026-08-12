@@ -6,9 +6,9 @@ A small standalone Python package containing the three diffusion-policy families
 
 Included policies:
 
-- `DiffusionUnetPolicy` (`DiffusionUnetTimmPolicy` compatibility alias)
-- `DiffusionTransformerPolicy` (`DiffusionTransformerTimmPolicy` compatibility alias)
-- `DiffusionDiTImagePolicy` (`DiffusionDiTPolicy` alias)
+- `DiffusionUnetPolicy`
+- `DiffusionTransformerPolicy`
+- `DiffusionDiTImagePolicy`
 
 ## Requirements
 
@@ -49,11 +49,10 @@ uv add git+https://github.com/OWNER/hommi_diffusion_policy.git
 ```python
 from hommi_diffusion_policy import (
     DiffusionUnetPolicy,
-    DiffusionUnetTimmPolicy,
     DiffusionTransformerPolicy,
-    DiffusionTransformerTimmPolicy,
     DiffusionDiTImagePolicy,
-    DiffusionDiTPolicy,
+    DiTObsEncoderConfig,
+    DiTObsEncoderLite,
     LinearNormalizer,
 )
 ```
@@ -109,13 +108,28 @@ Returning the feature tensor directly is also accepted.
 
 ### Built-in DiT observation encoder
 
-`DiTObsEncoderLite` mirrors the 2D HoMMI DiT observation encoder configuration and
-keeps `key_model_map.rgb` as the timm backbone name used by the policy optimizer:
+`DiTObsEncoderLite` mirrors HoMMI's 2D observation encoder. Encoder architecture
+and image augmentation are configured by `DiTObsEncoderConfig`, so downstream
+training packages do not need to fork or hard-code model behavior:
 
 ```python
-from hommi_diffusion_policy import DiTObsEncoderLite, DiffusionDiTImagePolicy
+from hommi_diffusion_policy import (
+    DiTObsEncoderConfig,
+    DiTObsEncoderLite,
+    DiffusionDiTImagePolicy,
+)
 
-encoder = DiTObsEncoderLite(shape_meta=shape_meta)
+encoder_config = DiTObsEncoderConfig(
+    model_name="vit_base_patch16_clip_224.openai",
+    pretrained=True,
+    train_crop_ratio=0.95,
+    eval_crop_ratio=0.95,
+    color_jitter_brightness=0.3,
+    color_jitter_contrast=0.4,
+    color_jitter_saturation=0.5,
+    color_jitter_hue=0.08,
+)
+encoder = DiTObsEncoderLite(shape_meta=shape_meta, config=encoder_config)
 policy = DiffusionDiTImagePolicy(
     shape_meta=shape_meta,
     noise_scheduler=scheduler,
@@ -125,6 +139,12 @@ policy = DiffusionDiTImagePolicy(
     n_obs_steps=2,
 )
 ```
+
+The defaults match HoMMI's `diffusion_dit.yaml` plus the single-task train/eval
+image transforms. `feature_aggregation` supports `cls`, `avg`, and `max`;
+`share_rgb_model=False` constructs one timm backbone per RGB observation. The
+legacy `model_name=` and `pretrained=` constructor keywords remain accepted for
+0.1.x callers.
 
 The encoder can also be constructed by name:
 

@@ -1,6 +1,6 @@
 [project]
 name = "hommi-diffusion-policy"
-version = "0.1.7"
+version = "0.2.0"
 description = "Standalone diffusion policy implementations adapted from HoMMI and UMI."
 readme = "README.md"
 requires-python = ">=3.10"

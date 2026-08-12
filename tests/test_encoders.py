@@ -1,3 +1,4 @@
+import pytest
 import sys
 from types import ModuleType, SimpleNamespace
 
@@ -173,3 +174,35 @@ def test_dit_obs_encoder_lite_integrates_with_dit_policy(monkeypatch):
         for parameter in group["params"]
     }
     assert lr_by_param_id[id(encoder.key_model_map["rgb"].scale)] == 1e-4
+
+
+def test_dit_encoder_config_validates_crop_ratio():
+    from hommi_diffusion_policy import DiTObsEncoderConfig
+
+    with pytest.raises(ValueError, match="train_crop_ratio"):
+        DiTObsEncoderConfig(train_crop_ratio=0.0).validate()
+
+
+def test_dit_encoder_config_is_exported():
+    from hommi_diffusion_policy import DiTObsEncoderConfig
+
+    cfg = DiTObsEncoderConfig(train_crop_ratio=0.9, eval_crop_ratio=1.0)
+    assert cfg.train_crop_ratio == 0.9
+    assert cfg.eval_crop_ratio == 1.0
+
+
+def test_dit_encoder_config_validates_augmentation_ranges() -> None:
+    from hommi_diffusion_policy import DiTObsEncoderConfig
+
+    for config in (
+        DiTObsEncoderConfig(train_crop_ratio=0.0),
+        DiTObsEncoderConfig(eval_crop_ratio=1.1),
+        DiTObsEncoderConfig(color_jitter_brightness=-0.1),
+        DiTObsEncoderConfig(color_jitter_hue=0.6),
+    ):
+        try:
+            config.validate()
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"expected invalid config rejection: {config}")

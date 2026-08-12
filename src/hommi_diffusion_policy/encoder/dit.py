@@ -2,10 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import timm
 import torch
-import torchvision
-
 from torch import nn
 
 from .base import BaseObsEncoder
@@ -28,9 +25,9 @@ class DiTObsEncoderLite(BaseObsEncoder):
         share_rgb_model=True
         use_vision_norm=True
 
-    ``timm`` and ``torchvision`` are optional package dependencies and are only
-    imported when this encoder is instantiated. The rest of
-    ``hommi_diffusion_policy`` therefore remains usable without them.
+    ``timm`` and ``torchvision`` are package dependencies used by this encoder.
+    They are imported lazily when the encoder is instantiated so importing the
+    package does not eagerly load the vision stack.
     """
 
     def __init__(
@@ -41,6 +38,12 @@ class DiTObsEncoderLite(BaseObsEncoder):
         pretrained: bool = True,
     ) -> None:
         super().__init__()
+
+        # Keep heavyweight vision imports lazy even though they are required
+        # package dependencies. This also makes encoder tests/custom factories
+        # able to substitute a timm implementation before instantiation.
+        import timm
+        import torchvision
 
         self.shape_meta = shape_meta
         self.model_name = model_name

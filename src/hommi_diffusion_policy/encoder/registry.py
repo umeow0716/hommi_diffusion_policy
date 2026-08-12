@@ -7,8 +7,8 @@ from torch import nn
 
 EncoderFactory = Callable[..., nn.Module]
 
-# Built-ins are imported lazily so the core package remains usable without the
-# optional vision dependencies required by a particular encoder.
+# Built-ins are resolved lazily so importing the registry does not eagerly load
+# encoder modules or their heavier runtime dependencies.
 _BUILTIN_ENCODERS: dict[str, tuple[str, str]] = {
     "dit_obs_lite": ("hommi_diffusion_policy.encoder.dit", "DiTObsEncoderLite"),
 }

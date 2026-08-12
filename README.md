@@ -14,12 +14,15 @@ Included policies:
 
 - Python >= 3.10
 - PyTorch >= 2.0
+- torchvision >= 0.15
+- timm >= 0.9, < 2
 - diffusers >= 0.18.2, < 1
 
-The core policy/model package still keeps vision dependencies optional. The bundled
-`DiTObsEncoderLite` additionally uses `timm` and `torchvision`; install the `vision`
-extra when you want that encoder. Observation encoders are still injected as normal
-`torch.nn.Module` instances, so policies remain independent of any specific backbone.
+`timm` and `torchvision` are normal package dependencies because the bundled
+`DiTObsEncoderLite` is part of the supported public API. They are imported lazily by
+the encoder so importing `hommi_diffusion_policy` does not eagerly load the vision
+stack. Observation encoders are still injected as normal `torch.nn.Module` instances,
+so policies remain independent of any specific backbone.
 
 ## Install with uv
 
@@ -27,12 +30,6 @@ From this directory:
 
 ```bash
 uv sync
-```
-
-With the bundled HoMMI 2D DiT vision encoder:
-
-```bash
-uv sync --extra vision
 ```
 
 From another project:

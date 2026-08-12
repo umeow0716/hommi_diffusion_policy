@@ -1,14 +1,16 @@
 [project]
 name = "hommi-diffusion-policy"
-version = "0.1.4"
+version = "0.1.5"
 description = "Standalone diffusion policy implementations adapted from HoMMI and UMI."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 dependencies = [
+    "timm>=0.9",
     "torch>=2.0",
-    "diffusers>=0.18.2,<1",
+    "torchvision>=0.15",
+    "diffusers>=0.18.2",
 ]
 
 [project.optional-dependencies]

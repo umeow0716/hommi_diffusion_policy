@@ -16,9 +16,10 @@ Included policies:
 - PyTorch >= 2.0
 - diffusers >= 0.18.2, < 1
 
-The core package intentionally does **not** depend on `timm`, `torchvision`, `numpy`,
-`einops`, `accelerate`, HoMMI, or UMI. Observation encoders are injected as normal
-`torch.nn.Module` instances.
+The core policy/model package still keeps vision dependencies optional. The bundled
+`DiTObsEncoderLite` additionally uses `timm` and `torchvision`; install the `vision`
+extra when you want that encoder. Observation encoders are still injected as normal
+`torch.nn.Module` instances, so policies remain independent of any specific backbone.
 
 ## Install with uv
 
@@ -26,6 +27,12 @@ From this directory:
 
 ```bash
 uv sync
+```
+
+With the bundled HoMMI 2D DiT vision encoder:
+
+```bash
+uv sync --extra vision
 ```
 
 From another project:
@@ -102,6 +109,50 @@ class Encoder(torch.nn.Module):
 ```
 
 Returning the feature tensor directly is also accepted.
+
+### Built-in DiT observation encoder
+
+`DiTObsEncoderLite` mirrors the 2D HoMMI DiT observation encoder configuration and
+keeps `key_model_map.rgb` as the timm backbone name used by the policy optimizer:
+
+```python
+from hommi_diffusion_policy import DiTObsEncoderLite, DiffusionDiTImagePolicy
+
+encoder = DiTObsEncoderLite(shape_meta=shape_meta)
+policy = DiffusionDiTImagePolicy(
+    shape_meta=shape_meta,
+    noise_scheduler=scheduler,
+    obs_encoder=encoder,
+    horizon=32,
+    n_action_steps=16,
+    n_obs_steps=2,
+)
+```
+
+The encoder can also be constructed by name:
+
+```python
+from hommi_diffusion_policy import create_encoder
+
+encoder = create_encoder("dit_obs_lite", shape_meta=shape_meta)
+```
+
+### Adding another encoder
+
+Policies do not depend on the registry, so a custom encoder can always be passed
+directly. For configuration-driven projects, register a factory once and construct it
+by name:
+
+```python
+from hommi_diffusion_policy import create_encoder, register_encoder
+
+register_encoder("my_encoder", MyEncoder)
+encoder = create_encoder("my_encoder", shape_meta=shape_meta, width=512)
+```
+
+A custom encoder only needs to be an `nn.Module` implementing `forward()` and
+`output_shape()` with the contract required by the target policy. Subclassing
+`BaseObsEncoder` is optional.
 
 ## Scheduler
 

@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 import torch
 import torch.nn.functional as F
 
-from ..common.normalizer import LinearNormalizer
 from ..common.utils import encode_features, output_shape
 from ..model.unet1d import ConditionalUnet1D
 from .base import BasePolicy
@@ -70,7 +69,6 @@ class DiffusionUnetPolicy(BasePolicy):
             )
 
         self.noise_scheduler = noise_scheduler
-        self.normalizer = LinearNormalizer()
         self.action_dim = action_dim
         self.action_horizon = action_horizon
         self.obs_feature_dim = obs_feature_dim
@@ -85,9 +83,6 @@ class DiffusionUnetPolicy(BasePolicy):
             if num_inference_steps is not None
             else int(noise_scheduler.config.num_train_timesteps)
         )
-
-    def set_normalizer(self, normalizer: LinearNormalizer) -> None:
-        self.normalizer.load_state_dict(normalizer.state_dict())
 
     def get_optimizer(
         self,

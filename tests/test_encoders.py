@@ -112,7 +112,11 @@ def test_encoder_registry_supports_custom_extensions():
 def test_dit_obs_encoder_lite_integrates_with_dit_policy(monkeypatch):
     from types import SimpleNamespace
 
-    from hommi_diffusion_policy import DiffusionDiTImagePolicy
+    from hommi_diffusion_policy import (
+        DiffusionDiTImagePolicy,
+        LinearNormalizer,
+        SingleFieldLinearNormalizer,
+    )
 
     class Scheduler:
         def __init__(self):
@@ -141,7 +145,6 @@ def test_dit_obs_encoder_lite_integrates_with_dit_policy(monkeypatch):
         diffusion_timestep_embed_dim=16,
         depth=1,
         num_heads=4,
-        skip_model_side_normalization=True,
     )
 
     obs = {
@@ -150,6 +153,15 @@ def test_dit_obs_encoder_lite_integrates_with_dit_policy(monkeypatch):
         "robot0_eef_pos": torch.randn(2, 2, 3),
     }
     action = torch.randn(2, 4, 3)
+
+    normalizer = LinearNormalizer()
+    identity = SingleFieldLinearNormalizer.create_identity()
+    for key in shape_meta["obs"]:
+        if not shape_meta["obs"][key].get("ignore_by_policy", False):
+            normalizer[key] = identity
+    normalizer["action"] = identity
+    policy.set_normalizer(normalizer)
+
     loss = policy.compute_loss({"obs": obs, "action": action})
     assert loss.ndim == 0
     assert policy.obs_feature_dim == 11

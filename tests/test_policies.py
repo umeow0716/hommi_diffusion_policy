@@ -225,3 +225,37 @@ def test_unet_policy_normal_predict_uses_fast_unconditional_path():
 
     policy.conditional_sample = unexpected_conditional_sample
     assert policy.predict_action(obs)["action"].shape == action.shape
+
+
+def test_base_policy_owns_normalizer_and_checkpoint_restores_it():
+    scheduler = DummyScheduler()
+    obs = {"obs": torch.randn(2, 8)}
+    action = torch.randn(2, 8, 3)
+
+    source = DiffusionUnetPolicy(
+        shape_meta={"action": {"shape": (3,), "horizon": 8}},
+        noise_scheduler=scheduler,
+        obs_encoder=VectorEncoder(),
+        diffusion_step_embed_dim=16,
+        down_dims=(16, 32),
+        n_groups=8,
+        num_inference_steps=2,
+    )
+    source.set_normalizer(make_normalizer(obs, action))
+    state = source.state_dict()
+    assert any(key.startswith("normalizer.params_dict.") for key in state)
+
+    restored = DiffusionUnetPolicy(
+        shape_meta={"action": {"shape": (3,), "horizon": 8}},
+        noise_scheduler=DummyScheduler(),
+        obs_encoder=VectorEncoder(),
+        diffusion_step_embed_dim=16,
+        down_dims=(16, 32),
+        n_groups=8,
+        num_inference_steps=2,
+    )
+    restored.load_state_dict(state)
+
+    expected = source.normalizer["action"].normalize(action)
+    actual = restored.normalizer["action"].normalize(action)
+    assert torch.allclose(actual, expected)

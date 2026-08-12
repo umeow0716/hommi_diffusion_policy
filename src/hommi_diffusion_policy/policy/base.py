@@ -17,6 +17,10 @@ class BasePolicy(nn.Module, ABC):
         # and is present in upstream HoMMI/UMI checkpoints.
         self._dummy_variable = nn.Parameter()
         self.name = name
+        # Policies own application of normalization at both training and
+        # inference time. Dataset/training code is responsible for fitting or
+        # constructing the statistics and then injecting them via set_normalizer().
+        self.normalizer = LinearNormalizer()
 
     @property
     def device(self) -> torch.device:
@@ -52,7 +56,7 @@ class BasePolicy(nn.Module, ABC):
         del action_exec_horizon
 
     def set_normalizer(self, normalizer: LinearNormalizer) -> None:
-        raise NotImplementedError
+        self.normalizer.load_state_dict(normalizer.state_dict())
 
     def get_optimizer(self, *args, **kwargs) -> torch.optim.Optimizer:
         raise NotImplementedError

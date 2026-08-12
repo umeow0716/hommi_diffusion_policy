@@ -168,7 +168,24 @@ scheduler = DDPMScheduler(
 
 ## Normalization
 
-`LinearNormalizer` is implemented locally using PyTorch only. It supports:
+`LinearNormalizer` is a runtime policy utility implemented locally using PyTorch only.
+The policy owns **application** of normalization during both training and inference,
+while the training/data package owns **fitting/building** the normalization statistics.
+
+Typical training setup:
+
+```python
+normalizer = build_hommi_normalizer(train_dataset)  # lives in hommi_train
+policy.set_normalizer(normalizer)
+loss = policy.compute_loss(batch)                   # policy normalizes internally
+```
+
+Datasets should return the canonical/raw training representation rather than applying
+the normalizer inside `Dataset.__getitem__()`. This keeps train, validation, and
+inference on the same policy-side normalization path and ensures validation never fits
+its own statistics.
+
+`LinearNormalizer` supports:
 
 - per-key dict normalization
 - `limits` normalization
@@ -176,6 +193,10 @@ scheduler = DDPMScheduler(
 - `normalize` / `unnormalize`
 - checkpointing with `state_dict`
 - `.to(device)` / `.cuda()` through `nn.Module`
+
+The normalizer is owned by `BasePolicy`, so all policy families expose the same
+`set_normalizer()` behavior and keep the existing `normalizer.params_dict.*` checkpoint
+namespace.
 
 ## Attribution
 

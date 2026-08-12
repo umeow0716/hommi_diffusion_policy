@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 import torch
 import torch.nn.functional as F
 
-from ..common.normalizer import LinearNormalizer
 from ..common.utils import encode_features, output_shape
 from ..model.transformer import TransformerForActionDiffusion
 from .base import BasePolicy
@@ -73,7 +72,6 @@ class DiffusionTransformerPolicy(BasePolicy):
             p_drop_attn=p_drop_attn,
         )
         self.noise_scheduler = noise_scheduler
-        self.normalizer = LinearNormalizer()
         self.action_dim = action_dim
         self.action_horizon = action_horizon
         self.input_pertub = (
@@ -85,9 +83,6 @@ class DiffusionTransformerPolicy(BasePolicy):
             if num_inference_steps is not None
             else int(noise_scheduler.config.num_train_timesteps)
         )
-
-    def set_normalizer(self, normalizer: LinearNormalizer) -> None:
-        self.normalizer.load_state_dict(normalizer.state_dict())
 
     def get_optimizer(
         self,

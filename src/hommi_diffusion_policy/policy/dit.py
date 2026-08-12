@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 import torch
 import torch.nn.functional as F
 
-from ..common.normalizer import LinearNormalizer
 from ..common.utils import dict_apply, encode_features, output_shape
 from ..model.dit import ActionDiT
 from .base import BasePolicy
@@ -44,7 +43,6 @@ class DiffusionDiTImagePolicy(BasePolicy):
         qkv_bias: bool = True,
         use_rms_norm: bool = False,
         input_perturbation: float = 0.0,
-        skip_model_side_normalization: bool = False,
     ) -> None:
         super().__init__(name=name)
         action_shape = tuple(shape_meta["action"]["shape"])
@@ -79,7 +77,6 @@ class DiffusionDiTImagePolicy(BasePolicy):
         # DiT does not use inpainting.
         self.mask_generator = torch.nn.Module()
         self.mask_generator.register_parameter("_dummy_variable", torch.nn.Parameter())
-        self.normalizer = LinearNormalizer()
         self.horizon = int(horizon)
         self.obs_feature_dim = obs_feature_dim
         self.action_dim = action_dim
@@ -90,7 +87,6 @@ class DiffusionDiTImagePolicy(BasePolicy):
         self.fm_tsampler = fm_tsampler
         self.train_diffusion_n_samples = int(train_diffusion_n_samples)
         self.input_pertub = float(input_perturbation)
-        self._skip_model_side_normalization = skip_model_side_normalization
         self.num_inference_steps = (
             int(num_inference_steps)
             if num_inference_steps is not None
@@ -101,18 +97,6 @@ class DiffusionDiTImagePolicy(BasePolicy):
             if fm_tsampler == "beta"
             else None
         )
-
-    def set_normalizer(self, normalizer: LinearNormalizer) -> None:
-        self.normalizer.load_state_dict(normalizer.state_dict())
-        if hasattr(self.obs_encoder, "set_normalizer"):
-            self.obs_encoder.set_normalizer(self.normalizer)
-
-    def maybe_normalize(self, data, normalizer_key: str | None = None):
-        if self._skip_model_side_normalization:
-            return data
-        if normalizer_key is not None:
-            return self.normalizer[normalizer_key].normalize(data)
-        return self.normalizer.normalize(data)
 
     def get_optimizer(
         self,
@@ -171,13 +155,13 @@ class DiffusionDiTImagePolicy(BasePolicy):
             raise ValueError("valid_mask is not supported; use valid_action_mask")
 
         valid_action_mask = batch.get("valid_action_mask")
-        actions = self.maybe_normalize(batch["action"], normalizer_key="action")
+        actions = self.normalizer["action"].normalize(batch["action"])
         if actions.shape[1] != self.horizon:
             raise ValueError(
                 f"Expected action horizon {self.horizon}, got {actions.shape[1]}"
             )
         batch_size = actions.shape[0]
-        nobs = self.maybe_normalize(batch["obs"])
+        nobs = self.normalizer.normalize(batch["obs"])
         global_cond = self._encode_history(nobs, batch_size)
         trajectory = actions
 
@@ -293,7 +277,7 @@ class DiffusionDiTImagePolicy(BasePolicy):
     def predict_action(
         self, obs_dict: dict[str, torch.Tensor]
     ) -> dict[str, torch.Tensor]:
-        nobs = self.maybe_normalize(obs_dict)
+        nobs = self.normalizer.normalize(obs_dict)
         value = next(iter(nobs.values()))
         batch_size = value.shape[0]
         global_cond = self._encode_history(nobs, batch_size)

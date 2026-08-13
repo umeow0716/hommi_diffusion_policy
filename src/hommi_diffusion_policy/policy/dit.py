@@ -243,7 +243,11 @@ class DiffusionDiTImagePolicy(BasePolicy):
                 trajectory = trajectory - model_output / self.num_inference_steps
             return trajectory
 
-        self.noise_scheduler.set_timesteps(self.num_inference_steps)
+        self.noise_scheduler.set_timesteps(
+            self.num_inference_steps,
+            device=device,
+        )
+
         for timestep in self.noise_scheduler.timesteps:
             model_output = self.model(global_cond, trajectory, timestep)
             trajectory = self.noise_scheduler.step(
